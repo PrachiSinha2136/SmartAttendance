@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>{% block title %}SmartAttendance{% endblock %}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div>
+        <h2><i class="fas fa-shield-halved"></i> SmartAttendance</h2>
+        <p>AI-Powered Biometric System</p>
+      </div>
+    </div>
+    <nav class="sidebar-nav">
+      <ul>
+        <li class="{{ 'active' if request.endpoint == 'dashboard' else '' }}">
+          <a href="{{ url_for('dashboard') }}"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        </li>
+        <li class="{{ 'active' if request.endpoint == 'register' else '' }}">
+          <a href="{{ url_for('register') }}"><i class="fas fa-user-plus"></i> Register Student</a>
+        </li>
+        <li class="{{ 'active' if request.endpoint == 'attendance' else '' }}">
+          <a href="{{ url_for('attendance') }}"><i class="fas fa-clipboard-check"></i> Mark Attendance</a>
+        </li>
+        <li class="{{ 'active' if request.endpoint == 'reports' else '' }}">
+          <a href="{{ url_for('reports') }}"><i class="fas fa-chart-bar"></i> Reports</a>
+        </li>
+        <li>
+          <a href="{{ url_for('logout') }}"><i class="fas fa-sign-out-alt"></i> Logout</a>
+        </li>
+      </ul>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+      <div class="user-info">
+        <span>Welcome, {{ session.get('teacher_name', 'Teacher') }}</span>
+        <div class="avatar">{{ session.get('teacher_name', 'T')[0].upper() }}</div>
+      </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <ul class="flash-list">
+          {% for category, message in messages %}
+            <li class="flash-{{ category }}"><i class="fas fa-info-circle"></i> {{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}{% endblock %}
+  </div>
+</div>
+{% block scripts %}{% endblock %}
+</body>
+</html>

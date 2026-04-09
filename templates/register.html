@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Register Student | SmartAttendance{% endblock %}
+{% block page_title %}Register Student{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width:860px;margin:auto;">
+  <h2 style="margin-bottom:1.5rem;font-size:1.1rem;color:#0f172a;">
+    <i class="fas fa-user-plus"></i> Student Registration Form
+  </h2>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;" id="regForm">
+    <div class="input-group">
+      <label>Student Name *</label>
+      <input type="text" id="name" placeholder="Full name"/>
+    </div>
+    <div class="input-group">
+      <label>Student ID / Roll No *</label>
+      <input type="text" id="student_id" placeholder="e.g. BC24010"/>
+    </div>
+    <div class="input-group">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="student@example.com"/>
+    </div>
+    <div class="input-group">
+      <label>Class / Semester</label>
+      <select id="class_name">
+        {% for c in classes %}
+          <option>{{ c }}</option>
+        {% endfor %}
+        <option>BCA Sem 1</option>
+        <option>BCA Sem 2</option>
+        <option>BCA Sem 3</option>
+        <option>BCA Sem 4</option>
+        <option>MCA Sem 1</option>
+        <option>General</option>
+      </select>
+    </div>
+
+    <!-- Face capture -->
+    <div class="section-box">
+      <h3><i class="fas fa-camera" style="color:#3b82f6;"></i> Face ID Capture</h3>
+      <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="startCamera()"><i class="fas fa-video"></i> Enable Camera</button>
+        <button class="btn btn-success" onclick="captureImage()"><i class="fas fa-camera"></i> Capture</button>
+      </div>
+      <video id="faceVideo" autoplay style="width:100%;max-width:280px;"></video>
+      <canvas id="faceCanvas" style="display:none;"></canvas>
+      <div id="faceStatus" class="result-box"></div>
+    </div>
+
+    <!-- Fingerprint -->
+    <div class="section-box">
+      <h3><i class="fas fa-fingerprint" style="color:#0f172a;"></i> Fingerprint Scan (Demo)</h3>
+      <p style="font-size:.84rem;color:#64748b;margin-bottom:.8rem;">
+        In demo mode a unique ID is simulated. For real hardware, connect your scanner.
+      </p>
+      <div style="display:flex;gap:.8rem;flex-wrap:wrap;">
+        <button class="btn btn-dark" onclick="scanFingerprint()"><i class="fas fa-fingerprint"></i> Simulate Scan</button>
+      </div>
+      <div id="fpStatus" class="result-box"></div>
+      <input type="hidden" id="fingerprint_id"/>
+    </div>
+
+    <div style="grid-column:span 2;display:flex;gap:1rem;align-items:center;">
+      <button class="btn btn-primary" style="padding:.75rem 2rem;font-size:1rem;" onclick="registerStudent()">
+        <i class="fas fa-save"></i> Register Student
+      </button>
+      <div id="regResult" class="result-box" style="flex:1;display:none;"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let imageData = '';
+  let stream;
+
+  function startCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(s => {
+        stream = s;
+        const v = document.getElementById('faceVideo');
+        v.style.display = 'block';
+        v.srcObject = stream;
+      })
+      .catch(() => alert('Camera permission denied'));
+  }
+
+  function captureImage() {
+    const canvas = document.getElementById('faceCanvas');
+    const video  = document.getElementById('faceVideo');
+    if (!video.srcObject) { alert('Enable camera first'); return; }
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    imageData = canvas.toDataURL('image/jpeg', 0.7);
+    showResult('faceStatus', 'success', 'Face captured successfully');
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    video.style.display = 'none';
+  }
+
+  function scanFingerprint() {
+    const fp = 'FP_' + document.getElementById('student_id').value.trim() + '_' + Date.now();
+    document.getElementById('fingerprint_id').value = fp;
+    showResult('fpStatus', 'success', 'Fingerprint ID: ' + fp);
+  }
+
+  function showResult(id, type, msg) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.className = 'result-box result-' + type;
+    el.innerHTML = msg;
+  }
+
+  async function registerStudent() {
+    const name         = document.getElementById('name').value.trim();
+    const student_id   = document.getElementById('student_id').value.trim();
+    const email        = document.getElementById('email').value.trim();
+    const class_name   = document.getElementById('class_name').value;
+    const fingerprint  = document.getElementById('fingerprint_id').value;
+    const resEl        = document.getElementById('regResult');
+
+    if (!name || !student_id) { alert('Name and Student ID are required'); return; }
+
+    resEl.style.display = 'block';
+    resEl.className = 'result-box result-success';
+    resEl.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving…';
+
+    try {
+      const resp = await fetch('/api/students', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, student_id, email, class_name,
+                               fingerprint_id: fingerprint, face_encoding: imageData })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        resEl.className = 'result-box result-success';
+        resEl.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+        document.getElementById('name').value = '';
+        document.getElementById('student_id').value = '';
+        document.getElementById('email').value = '';
+        document.getElementById('fingerprint_id').value = '';
+        imageData = '';
+      } else {
+        resEl.className = 'result-box result-error';
+        resEl.innerHTML = '<i class="fas fa-times-circle"></i> ' + data.message;
+      }
+    } catch (e) {
+      resEl.className = 'result-box result-error';
+      resEl.innerHTML = '<i class="fas fa-times-circle"></i> Connection error';
+    }
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}{{ student.name }} | SmartAttendance{% endblock %}
+{% block page_title %}Student Detail{% endblock %}
+
+{% block content %}
+<!-- Profile card -->
+<div class="card mb-2" style="display:flex;align-items:center;gap:1.5rem;flex-wrap:wrap;">
+  <div style="width:64px;height:64px;border-radius:50%;background:#3b82f6;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:700;flex-shrink:0;">
+    {{ student.name[0].upper() }}
+  </div>
+  <div style="flex:1;">
+    <h2 style="font-size:1.3rem;">{{ student.name }}</h2>
+    <p style="color:#64748b;font-size:.88rem;">
+      <i class="fas fa-id-badge"></i> {{ student.student_id }} &nbsp;|&nbsp;
+      <i class="fas fa-graduation-cap"></i> {{ student.class_name }} &nbsp;|&nbsp;
+      <i class="fas fa-envelope"></i> {{ student.email or 'N/A' }} &nbsp;|&nbsp;
+      <i class="fas fa-calendar"></i> Registered {{ student.registered_at.strftime('%d %b %Y') if student.registered_at else 'N/A' }}
+    </p>
+  </div>
+  <div style="display:flex;gap:.6rem;">
+    <a href="/api/download/csv?student_id={{ student.student_id }}" class="btn btn-success"><i class="fas fa-file-csv"></i> CSV</a>
+    <a href="/api/download/pdf?student_id={{ student.student_id }}" class="btn btn-secondary"><i class="fas fa-file-pdf"></i> PDF</a>
+    <a href="{{ url_for('reports') }}" class="btn btn-outline"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<!-- Stat row -->
+<div class="stats-grid" style="margin-bottom:1.5rem;">
+  <div class="card stat-card">
+    <div class="stat-icon blue"><i class="fas fa-calendar-days"></i></div>
+    <div class="stat-info"><h4>Total Days</h4><div class="stat-value">{{ total }}</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div class="stat-info"><h4>Present</h4><div class="stat-value">{{ present }}</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon red"><i class="fas fa-times-circle"></i></div>
+    <div class="stat-info"><h4>Absent</h4><div class="stat-value">{{ absent }}</div></div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon {{ 'green' if pct >= 85 else ('yellow' if pct >= 75 else 'red') }}">
+      <i class="fas fa-percent"></i>
+    </div>
+    <div class="stat-info">
+      <h4>Attendance %</h4>
+      <div class="stat-value">{{ pct }}%</div>
+      <div class="stat-sub">
+        {% if pct >= 85 %}Excellent{% elif pct >= 75 %}Good{% else %}Low – Below 75%{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="grid-2" style="margin-bottom:1.5rem;">
+  <div class="card">
+    <h3 style="margin-bottom:1rem;font-size:1rem;">Present vs Absent</h3>
+    <div class="chart-container" style="height:240px;">
+      <canvas id="donutChart"></canvas>
+    </div>
+  </div>
+  <div class="card">
+    <h3 style="margin-bottom:1rem;font-size:1rem;">Monthly Trend (Last 6 Months)</h3>
+    <div class="chart-container" style="height:240px;">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- History table -->
+<div class="card">
+  <h3 style="margin-bottom:1rem;font-size:1rem;"><i class="fas fa-history"></i> Attendance History</h3>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Date</th><th>Day</th><th>Status</th><th>Method</th><th>Marked At</th></tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{ r.date }}</td>
+          <td>{{ r.date.strftime('%A') if r.date else '' }}</td>
+          <td><span class="badge badge-{{ r.status | lower }}">{{ r.status }}</span></td>
+          <td><span class="badge badge-{{ r.method }}">{{ r.method }}</span></td>
+          <td>{{ r.time or '-' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="text-align:center;color:#94a3b8;">No attendance records</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+new Chart(document.getElementById('donutChart').getContext('2d'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Present', 'Absent'],
+    datasets: [{
+      data: [{{ present }}, {{ absent }}],
+      backgroundColor: ['#10b981', '#ef4444'],
+      borderWidth: 0
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom' },
+      tooltip: { callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + ' days' } }
+    },
+    cutout: '65%'
+  }
+});
+
+new Chart(document.getElementById('trendChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: {{ months | tojson }},
+    datasets: [{
+      label: 'Attendance %',
+      data: {{ month_pcts | tojson }},
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59,130,246,.15)',
+      fill: true, tension: 0.4, pointRadius: 5,
+      pointBackgroundColor: '#3b82f6'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { y: { min: 0, max: 100, title: { display: true, text: '%' } } }
+  }
+});
+</script>
+{% endblock %}
