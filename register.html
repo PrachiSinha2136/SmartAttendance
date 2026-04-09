@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartAttendance | Register Student</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: #0f172a;
+      color: white;
+      padding: 1.5rem;
+    }
+
+    .sidebar h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      margin-bottom: 1rem;
+    }
+
+    .sidebar li a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0.9rem 1rem;
+      text-decoration: none;
+      color: #cbd5e1;
+      border-radius: 10px;
+      transition: 0.3s;
+    }
+
+    .sidebar li a:hover,
+    .sidebar li.active a {
+      background: #1e293b;
+      color: white;
+    }
+
+    .main {
+      flex: 1;
+      padding: 2rem;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .topbar h1 {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .admin-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .form-card {
+      background: white;
+      border-radius: 18px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .form-card h2 {
+      margin-bottom: 1.5rem;
+      color: #0f172a;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .input-group label {
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .input-group input {
+      padding: 0.9rem 1rem;
+      border: 1px solid #d1d5db;
+      border-radius: 10px;
+      font-size: 1rem;
+    }
+
+    .section-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.2rem;
+    }
+
+    .section-box h3 {
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #1e293b;
+    }
+
+    video {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 12px;
+      margin-top: 1rem;
+      border: 2px solid #dbeafe;
+      display: none;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .primary-btn {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .secondary-btn {
+      background: #10b981;
+      color: white;
+    }
+
+    .dark-btn {
+      background: #0f172a;
+      color: white;
+    }
+
+    .warning-btn {
+      background: #f59e0b;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h2><i class="fas fa-shield-halved"></i> SmartAttendance</h2>
+      <p>AI-Powered Dual Biometric System</p>
+
+      <ul>
+        <li><a href="dash.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+        <li class="active"><a href="#"><i class="fas fa-users"></i> Register Student</a></li>
+        <li><a href="#"><i class="fas fa-chart-bar"></i> Attendance</a></li>
+        <li><a href="#"><i class="fas fa-calendar-days"></i> Holidays & Schedules</a></li>
+        <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+        <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+      </ul>
+    </aside>
+
+    <div class="main">
+      <div class="topbar">
+        <h1>Register Student</h1>
+        <div class="admin-box">
+          <span>Welcome, Admin</span>
+          <div class="avatar">A</div>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <h2>Student Registration Form</h2>
+
+        <div class="form-grid">
+          <div class="input-group full-width">
+            <label>Student Name</label>
+            <input type="text" id="name" placeholder="Enter student name">
+          </div>
+
+          <div class="input-group full-width">
+            <label>Student ID</label>
+            <input type="text" id="student_id" placeholder="Enter student ID">
+          </div>
+
+          <div class="section-box">
+            <h3><i class="fas fa-camera"></i> Face ID Capture</h3>
+            <div class="button-group">
+              <button type="button" class="primary-btn" onclick="startCamera()">Enable Camera</button>
+              <button type="button" class="secondary-btn" onclick="capture()">Capture Image</button>
+            </div>
+            <video id="video" autoplay></video>
+          </div>
+
+          <div class="section-box">
+            <h3><i class="fas fa-fingerprint"></i> Fingerprint Scan</h3>
+            <div class="button-group">
+              <button type="button" class="dark-btn" onclick="scanFingerprint()">Scan Fingerprint</button>
+            </div>
+          </div>
+
+          <div class="full-width">
+            <div class="button-group">
+              <button type="button" class="primary-btn" onclick="registerStudent()">Register Student</button>
+            </div>
+          </div>
+        </div>
+
+        <canvas id="canvas" style="display:none;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let imageData = "";
+    let stream;
+    let fingerprintData = "";
+
+    function startCamera() {
+      navigator.mediaDevices.getUserMedia({ video: true })
+      .then(s => {
+        stream = s;
+        let video = document.getElementById('video');
+        video.style.display = 'block';
+        video.srcObject = stream;
+      })
+      .catch(() => {
+        alert('Camera permission allow karo');
+      });
+    }
+
+    function capture() {
+      let canvas = document.getElementById('canvas');
+      let video = document.getElementById('video');
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+
+      canvas.getContext('2d').drawImage(video, 0, 0);
+      imageData = canvas.toDataURL('image/png');
+
+      alert('Face Captured Successfully');
+
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    }
+
+    function scanFingerprint() {
+      fingerprintData = 'dummy_fingerprint_' + Math.floor(Math.random() * 100000);
+      alert('Fingerprint Captured Successfully');
+    }
+
+    async function registerStudent() {
+      let name = document.getElementById('name').value;
+      let studentId = document.getElementById('student_id').value;
+
+      if (!name || !studentId) {
+        alert('Name aur Student ID fill karo');
+        return;
+      }
+
+      if (!imageData) {
+        alert('Pehle face capture karo');
+        return;
+      }
+
+      if (!fingerprintData) {
+        alert('Pehle fingerprint scan karo');
+        return;
+      }
+
+      let formData = new FormData();
+      formData.append('student_name', name);     
+      formData.append('student_id', studentId);
+      formData.append('fingerprint', fingerprintData);
+      formData.append('image', imageData);
+
+      try {
+  
+        let response = await fetch('/SmartAttendance%20-%20Copy/templates/save_student.php', { 
+          method: 'POST',
+          body: formData
+        });
+
+        let result = await response.text();
+        alert(result);
+
+        document.getElementById('name').value = '';
+        document.getElementById('student_id').value = '';
+        imageData = '';
+        fingerprintData = '';
+      } catch (error) {
+        alert('Data save nahi hua');
+        console.log(error);
+      }
+    }
+  </script>
+
+</body>
+</html>
