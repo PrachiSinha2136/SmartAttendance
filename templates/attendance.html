@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Mark Attendance | SmartAttendance{% endblock %}
+{% block page_title %}Mark Attendance{% endblock %}
+
+{% block content %}
+<div class="grid-2" style="margin-bottom:1.5rem;">
+  <div class="card">
+    <h3 style="margin-bottom:1rem;font-size:1rem;"><i class="fas fa-clipboard-check" style="color:#3b82f6;"></i> Mark Attendance</h3>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('face', this)"><i class="fas fa-camera"></i> Face</button>
+      <button class="tab-btn" onclick="switchTab('fingerprint', this)"><i class="fas fa-fingerprint"></i> Fingerprint</button>
+      <button class="tab-btn" onclick="switchTab('manual', this)"><i class="fas fa-list-check"></i> Manual</button>
+    </div>
+
+    <!-- Face tab -->
+    <div class="tab-panel active" id="tab-face">
+      <div class="section-box">
+        <h3 style="font-size:.9rem;"><i class="fas fa-camera"></i> Face Recognition (Demo)</h3>
+        <div style="display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:.6rem;">
+          <button class="btn btn-primary" onclick="startFaceCamera()"><i class="fas fa-video"></i> Start Camera</button>
+          <button class="btn btn-success" onclick="captureFace()"><i class="fas fa-camera"></i> Capture & Match</button>
+        </div>
+        <video id="faceVideo" autoplay style="width:100%;max-width:300px;"></video>
+        <canvas id="faceCanvas" style="display:none;"></canvas>
+        <div style="margin:.8rem 0;">
+          <label style="font-size:.85rem;font-weight:600;color:#475569;">Student ID (required)</label>
+          <input type="text" id="faceStudentId" placeholder="Enter Student ID" style="width:100%;padding:.6rem;border:1px solid #d1d5db;border-radius:8px;margin-top:4px;"/>
+        </div>
+        <div id="faceResult" class="result-box"></div>
+        <button class="btn btn-success" id="facePresentBtn" style="margin-top:.8rem;display:none;" onclick="markFromFace()">
+          <i class="fas fa-check"></i> Mark Present
+        </button>
+      </div>
+    </div>
+
+    <!-- Fingerprint tab -->
+    <div class="tab-panel" id="tab-fingerprint">
+      <div class="section-box">
+        <h3 style="font-size:.9rem;"><i class="fas fa-fingerprint"></i> Fingerprint Scanner (Demo)</h3>
+        <p style="font-size:.83rem;color:#64748b;margin-bottom:.8rem;">
+          Enter the fingerprint ID assigned during registration, or simulate a scan.
+        </p>
+        <div class="input-group">
+          <label>Fingerprint ID</label>
+          <input type="text" id="fpInput" placeholder="e.g. FP_BC24001"/>
+        </div>
+        <div style="display:flex;gap:.7rem;flex-wrap:wrap;">
+          <button class="btn btn-dark" onclick="simulateFp()"><i class="fas fa-fingerprint"></i> Simulate Scan</button>
+          <button class="btn btn-primary" onclick="matchFingerprint()"><i class="fas fa-search"></i> Match & Mark</button>
+        </div>
+        <div id="fpResult" class="result-box" style="margin-top:.8rem;"></div>
+      </div>
+    </div>
+
+    <!-- Manual tab -->
+    <div class="tab-panel" id="tab-manual">
+      <div class="section-box">
+        <h3 style="font-size:.9rem;"><i class="fas fa-list-check"></i> Manual Entry</h3>
+        <div class="input-group">
+          <label>Student</label>
+          <select id="manualStudent">
+            <option value="">-- Select Student --</option>
+            {% for s in students %}
+              <option value="{{ s.student_id }}">{{ s.name }} ({{ s.student_id }})</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="input-group">
+          <label>Date</label>
+          <input type="date" id="manualDate" value="{{ today }}"/>
+        </div>
+        <div class="input-group">
+          <label>Status</label>
+          <select id="manualStatus">
+            <option value="Present">Present</option>
+            <option value="Absent">Absent</option>
+            <option value="Late">Late</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" onclick="markManual()"><i class="fas fa-save"></i> Save Attendance</button>
+        <div id="manualResult" class="result-box" style="margin-top:.8rem;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick stats -->
+  <div class="card">
+    <h3 style="margin-bottom:1rem;font-size:1rem;"><i class="fas fa-calendar-day" style="color:#10b981;"></i> Today's Summary – {{ today }}</h3>
+    <div style="display:flex;gap:1rem;margin-bottom:1rem;flex-wrap:wrap;">
+      <div style="flex:1;text-align:center;padding:.8rem;background:#d1fae5;border-radius:10px;">
+        <div style="font-size:1.6rem;font-weight:700;color:#065f46;" id="presentCount">
+          {{ today_records | selectattr('status','eq','Present') | list | length }}
+        </div>
+        <div style="font-size:.8rem;color:#065f46;">Present</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:.8rem;background:#fee2e2;border-radius:10px;">
+        <div style="font-size:1.6rem;font-weight:700;color:#991b1b;" id="absentCount">
+          {{ today_records | selectattr('status','eq','Absent') | list | length }}
+        </div>
+        <div style="font-size:.8rem;color:#991b1b;">Absent</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:.8rem;background:#fef3c7;border-radius:10px;">
+        <div style="font-size:1.6rem;font-weight:700;color:#92400e;" id="lateCount">
+          {{ today_records | selectattr('status','eq','Late') | list | length }}
+        </div>
+        <div style="font-size:.8rem;color:#92400e;">Late</div>
+      </div>
+    </div>
+    <div style="text-align:right;margin-bottom:.6rem;">
+      <button class="btn btn-outline" onclick="refreshTable()" style="font-size:.8rem;">
+        <i class="fas fa-rotate-right"></i> Refresh
+      </button>
+    </div>
+    <div class="table-wrap">
+      <table id="todayTable">
+        <thead>
+          <tr><th>Student</th><th>Class</th><th>Status</th><th>Method</th><th>Time</th></tr>
+        </thead>
+        <tbody id="todayBody">
+          {% for r in today_records %}
+          <tr>
+            <td>{{ r.name }}</td>
+            <td>{{ r.class_name }}</td>
+            <td><span class="badge badge-{{ r.status | lower }}">{{ r.status }}</span></td>
+            <td><span class="badge badge-{{ r.method }}">{{ r.method }}</span></td>
+            <td>{{ r.time }}</td>
+          </tr>
+          {% else %}
+          <tr><td colspan="5" style="text-align:center;color:#94a3b8;">No records yet today</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  let faceStream;
+  let faceCaptured = false;
+
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  function startFaceCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(s => {
+        faceStream = s;
+        const v = document.getElementById('faceVideo');
+        v.style.display = 'block';
+        v.srcObject = s;
+      })
+      .catch(() => alert('Camera permission denied'));
+  }
+
+  function captureFace() {
+    const video = document.getElementById('faceVideo');
+    if (!video.srcObject) { alert('Start camera first'); return; }
+    const canvas = document.getElementById('faceCanvas');
+    canvas.width  = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext('2d').drawImage(video, 0, 0);
+    faceCaptured = true;
+    showResult('faceResult', 'success', '<i class="fas fa-check-circle"></i> Face captured – verify student ID then click Mark Present');
+    document.getElementById('facePresentBtn').style.display = 'inline-flex';
+    if (faceStream) faceStream.getTracks().forEach(t => t.stop());
+    video.style.display = 'none';
+  }
+
+  function markFromFace() {
+    const sid = document.getElementById('faceStudentId').value.trim();
+    if (!sid) { alert('Enter Student ID'); return; }
+    markAttendance(sid, 'Present', 'face', '{{ today }}', 'faceResult');
+    document.getElementById('facePresentBtn').style.display = 'none';
+  }
+
+  function simulateFp() {
+    const sid = prompt('Enter Student ID to simulate fingerprint scan:');
+    if (sid) document.getElementById('fpInput').value = 'FP_' + sid;
+  }
+
+  async function matchFingerprint() {
+    const fp = document.getElementById('fpInput').value.trim();
+    if (!fp) { alert('Enter fingerprint ID'); return; }
+    showResult('fpResult', 'success', '<i class="fas fa-spinner fa-spin"></i> Looking up…');
+    try {
+      const resp = await fetch('/api/students/lookup?fingerprint_id=' + encodeURIComponent(fp));
+      const data = await resp.json();
+      if (data.found) {
+        markAttendance(data.student_id, 'Present', 'fingerprint', '{{ today }}', 'fpResult', fp);
+      } else {
+        showResult('fpResult', 'error', '<i class="fas fa-times-circle"></i> No student found with this fingerprint ID');
+      }
+    } catch (e) {
+      showResult('fpResult', 'error', 'Connection error');
+    }
+  }
+
+  async function markManual() {
+    const sid    = document.getElementById('manualStudent').value;
+    const dt     = document.getElementById('manualDate').value;
+    const status = document.getElementById('manualStatus').value;
+    if (!sid) { alert('Select a student'); return; }
+    markAttendance(sid, status, 'manual', dt, 'manualResult');
+  }
+
+  async function markAttendance(student_id, status, method, date, resultId, fingerprint_id) {
+    showResult(resultId, 'success', '<i class="fas fa-spinner fa-spin"></i> Saving…');
+    const body = { student_id, status, method, date };
+    if (fingerprint_id) body.fingerprint_id = fingerprint_id;
+    try {
+      const resp = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const data = await resp.json();
+      if (data.success) {
+        showResult(resultId, 'success', '<i class="fas fa-check-circle"></i> ' + data.message);
+        refreshTable();
+      } else {
+        showResult(resultId, 'error', '<i class="fas fa-times-circle"></i> ' + data.message);
+      }
+    } catch (e) {
+      showResult(resultId, 'error', 'Connection error');
+    }
+  }
+
+  async function refreshTable() {
+    const resp = await fetch('/api/attendance?date={{ today }}');
+    const rows = await resp.json();
+    const tbody = document.getElementById('todayBody');
+    const badges = { Present: 'badge-present', Absent: 'badge-absent', Late: 'badge-late', face: 'badge-face', fingerprint: 'badge-fingerprint', manual: 'badge-manual' };
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#94a3b8;">No records yet today</td></tr>';
+    } else {
+      tbody.innerHTML = rows.map(r =>
+        '<tr><td>' + r.name + '</td><td>' + r.class_name + '</td>' +
+        '<td><span class="badge ' + (badges[r.status] || '') + '">' + r.status + '</span></td>' +
+        '<td><span class="badge ' + (badges[r.method] || '') + '">' + r.method + '</span></td>' +
+        '<td>' + (r.time || '-') + '</td></tr>'
+      ).join('');
+    }
+    document.getElementById('presentCount').textContent = rows.filter(r => r.status === 'Present').length;
+    document.getElementById('absentCount').textContent  = rows.filter(r => r.status === 'Absent').length;
+    document.getElementById('lateCount').textContent    = rows.filter(r => r.status === 'Late').length;
+  }
+
+  function showResult(id, type, msg) {
+    const el = document.getElementById(id);
+    el.style.display = 'block';
+    el.className = 'result-box result-' + type;
+    el.innerHTML = msg;
+  }
+</script>
+{% endblock %}

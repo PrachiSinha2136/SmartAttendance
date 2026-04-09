@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | SmartAttendance{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Filter bar -->
+<div class="card mb-2">
+  <form method="GET" action="{{ url_for('dashboard') }}">
+    <div class="filter-bar">
+      <div class="form-group">
+        <label>Month & Year</label>
+        <input type="month" name="month" value="{{ month }}"/>
+      </div>
+      <div class="form-group">
+        <label>Class / Semester</label>
+        <select name="class_name">
+          <option value="">All Classes</option>
+          {% for c in classes %}
+            <option value="{{ c }}" {{ 'selected' if class_filter == c else '' }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Student Search</label>
+        <input type="text" name="search" placeholder="Name or Roll No…" value="{{ search }}"/>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:.6rem;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Generate</button>
+          <a href="/api/download/csv?month={{ month }}" class="btn btn-success"><i class="fas fa-file-csv"></i> CSV</a>
+          <a href="/api/download/pdf?month={{ month }}" class="btn btn-secondary"><i class="fas fa-file-pdf"></i> PDF</a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Stat cards -->
+<div class="stats-grid">
+  <div class="card stat-card">
+    <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+    <div class="stat-info">
+      <h4>Total Students</h4>
+      <div class="stat-value">{{ total_students }}</div>
+    </div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div class="stat-info">
+      <h4>Avg Attendance</h4>
+      <div class="stat-value">{{ avg_pct }}%</div>
+      <div class="stat-sub">for {{ month }}</div>
+    </div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon yellow"><i class="fas fa-user-clock"></i></div>
+    <div class="stat-info">
+      <h4>Low Attendance</h4>
+      <div class="stat-value">{{ low_count }}</div>
+      <div class="stat-sub">below 75%</div>
+    </div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon red"><i class="fas fa-calendar-day"></i></div>
+    <div class="stat-info">
+      <h4>Today Present</h4>
+      <div class="stat-value">{{ today_present }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts + table -->
+<div class="grid-2">
+  <div class="card">
+    <h3 style="margin-bottom:1rem;font-size:1rem;">Weekly Attendance – {{ month }}</h3>
+    <div class="chart-container">
+      <canvas id="weeklyChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:1rem;font-size:1rem;">Student-wise Report – {{ month }}</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Roll No</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Present</th>
+            <th>Total</th>
+            <th>%</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for st in students %}
+          {% set t = st.total_days or 0 %}
+          {% set p = st.present_days or 0 %}
+          {% set pct = ((p / t * 100) | round(1)) if t > 0 else 0 %}
+          <tr>
+            <td><a href="{{ url_for('student_detail', student_id=st.student_id) }}" style="color:#3b82f6;">{{ st.student_id }}</a></td>
+            <td>{{ st.name }}</td>
+            <td>{{ st.class_name }}</td>
+            <td>{{ p }}</td>
+            <td>{{ t }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:8px;">
+                {{ pct }}%
+                <div class="progress-bar-wrap" style="width:60px;">
+                  <div class="progress-bar" style="width:{{ pct }}%;background:{{ '#10b981' if pct >= 85 else ('#f59e0b' if pct >= 75 else '#ef4444') }};"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if pct >= 85 %}<span class="badge badge-excellent">Excellent</span>
+              {% elif pct >= 75 %}<span class="badge badge-good">Good</span>
+              {% else %}<span class="badge badge-low">Low</span>{% endif %}
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="7" style="text-align:center;color:#64748b;">No students found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ctx = document.getElementById('weeklyChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: {{ weeks | tojson }},
+    datasets: [
+      {
+        type: 'bar',
+        label: 'Present Count',
+        data: {{ weekly_present | tojson }},
+        backgroundColor: 'rgba(59,130,246,0.6)',
+        borderColor: '#3b82f6',
+        borderWidth: 1,
+        borderRadius: 6
+      },
+      {
+        type: 'line',
+        label: 'Attendance %',
+        data: {{ weekly_pct | tojson }},
+        borderColor: '#10b981',
+        backgroundColor: 'rgba(16,185,129,.15)',
+        fill: true, tension: 0.3,
+        yAxisID: 'y1', pointRadius: 4
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y:  { beginAtZero: true, title: { display: true, text: 'Students Present' } },
+      y1: { position: 'right', min: 0, max: 100, title: { display: true, text: 'Percentage (%)' }, grid: { drawOnChartArea: false } }
+    }
+  }
+});
+</script>
+{% endblock %}

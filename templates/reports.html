@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% block title %}Reports | SmartAttendance{% endblock %}
+{% block page_title %}Reports{% endblock %}
+
+{% block content %}
+<!-- Filter -->
+<div class="card mb-2">
+  <form method="GET" action="{{ url_for('reports') }}">
+    <div class="filter-bar">
+      <div class="form-group">
+        <label>Month & Year</label>
+        <input type="month" name="month" value="{{ month }}"/>
+      </div>
+      <div class="form-group">
+        <label>Class / Semester</label>
+        <select name="class_name">
+          <option value="">All Classes</option>
+          {% for c in classes %}
+            <option value="{{ c }}" {{ 'selected' if class_filter == c else '' }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Student Search</label>
+        <input type="text" name="search" placeholder="Name or Roll No…" value="{{ search }}"/>
+      </div>
+      <div class="form-group">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:.6rem;flex-wrap:wrap;">
+          <button type="submit" class="btn btn-primary"><i class="fas fa-search"></i> Filter</button>
+          <a href="/api/download/csv?month={{ month }}{% if class_filter %}&class_name={{ class_filter }}{% endif %}" class="btn btn-success">
+            <i class="fas fa-file-csv"></i> Download CSV
+          </a>
+          <a href="/api/download/pdf?month={{ month }}{% if class_filter %}&class_name={{ class_filter }}{% endif %}" class="btn btn-secondary">
+            <i class="fas fa-file-pdf"></i> Download PDF
+          </a>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Stats row -->
+<div class="stats-grid" style="margin-bottom:1.5rem;">
+  <div class="card stat-card">
+    <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+    <div class="stat-info">
+      <h4>Students</h4>
+      <div class="stat-value">{{ rows | length }}</div>
+    </div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div class="stat-info">
+      <h4>Avg Attendance</h4>
+      <div class="stat-value">{{ avg_pct }}%</div>
+    </div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon yellow"><i class="fas fa-user-clock"></i></div>
+    <div class="stat-info">
+      <h4>Below 75%</h4>
+      <div class="stat-value">{{ rows | selectattr('pct','lt',75) | list | length }}</div>
+    </div>
+  </div>
+  <div class="card stat-card">
+    <div class="stat-icon red"><i class="fas fa-star"></i></div>
+    <div class="stat-info">
+      <h4>Excellent (≥85%)</h4>
+      <div class="stat-value">{{ rows | selectattr('pct','ge',85) | list | length }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart + table -->
+<div class="grid-2">
+  <div class="card">
+    <h3 style="margin-bottom:1rem;font-size:1rem;">Overall Attendance Trend (Last 6 Months)</h3>
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:1rem;font-size:1rem;">Student-wise Report – {{ month }}</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Roll No</th>
+            <th>Name</th>
+            <th>Class</th>
+            <th>Present</th>
+            <th>Absent</th>
+            <th>Total</th>
+            <th>%</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in rows %}
+          <tr>
+            <td><a href="{{ url_for('student_detail', student_id=r.student_id) }}" style="color:#3b82f6;font-weight:600;">{{ r.student_id }}</a></td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.class_name }}</td>
+            <td>{{ r.present_days or 0 }}</td>
+            <td>{{ r.absent_days }}</td>
+            <td>{{ r.total_days or 0 }}</td>
+            <td>
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-weight:600;">{{ r.pct }}%</span>
+                <div class="progress-bar-wrap" style="width:50px;">
+                  <div class="progress-bar" style="width:{{ r.pct }}%;background:{{ '#10b981' if r.pct >= 85 else ('#f59e0b' if r.pct >= 75 else '#ef4444') }};"></div>
+                </div>
+              </div>
+            </td>
+            <td>
+              {% if r.pct >= 85 %}<span class="badge badge-excellent">Excellent</span>
+              {% elif r.pct >= 75 %}<span class="badge badge-good">Good</span>
+              {% else %}<span class="badge badge-low">Low</span>{% endif %}
+            </td>
+            <td>
+              <div style="display:flex;gap:4px;">
+                <a href="{{ url_for('student_detail', student_id=r.student_id) }}" class="btn btn-outline" style="padding:4px 8px;font-size:.75rem;">
+                  <i class="fas fa-eye"></i>
+                </a>
+                <a href="/api/download/csv?student_id={{ r.student_id }}" class="btn btn-outline" style="padding:4px 8px;font-size:.75rem;" title="Download CSV">
+                  <i class="fas fa-download"></i>
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% else %}
+          <tr><td colspan="9" style="text-align:center;color:#64748b;">No data found</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const ctx = document.getElementById('trendChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: {{ months_labels | tojson }},
+    datasets: [{
+      label: 'Overall Attendance %',
+      data: {{ months_pcts | tojson }},
+      borderColor: '#3b82f6',
+      backgroundColor: 'rgba(59,130,246,.15)',
+      fill: true, tension: 0.4, pointRadius: 5,
+      pointBackgroundColor: '#3b82f6'
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: { min: 0, max: 100, title: { display: true, text: 'Attendance %' } }
+    }
+  }
+});
+</script>
+{% endblock %}
