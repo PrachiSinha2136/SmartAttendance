@@ -1,0 +1,459 @@
+# attendance.html
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartAttendance | Mark Attendance</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      background: #f1f5f9;
+      color: #1e293b;
+    }
+
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 260px;
+      background: #0f172a;
+      color: white;
+      padding: 1.5rem;
+    }
+
+    .sidebar h2 {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .sidebar p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .sidebar ul {
+      list-style: none;
+    }
+
+    .sidebar li {
+      margin-bottom: 1rem;
+    }
+
+    .sidebar li a {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0.9rem 1rem;
+      text-decoration: none;
+      color: #cbd5e1;
+      border-radius: 10px;
+      transition: 0.3s;
+    }
+
+    .sidebar li a:hover,
+    .sidebar li.active a {
+      background: #1e293b;
+      color: white;
+    }
+
+    .main {
+      flex: 1;
+      padding: 2rem;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .topbar h1 {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .admin-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #3b82f6;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .form-card {
+      background: white;
+      border-radius: 18px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem;
+    }
+
+    .full-width {
+      grid-column: span 2;
+    }
+
+    .section-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.2rem;
+    }
+
+    .section-box h3 {
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #1e293b;
+    }
+
+    .button-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 0.9rem 1.2rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .primary-btn {
+      background: #3b82f6;
+      color: white;
+    }
+
+    .secondary-btn {
+      background: #10b981;
+      color: white;
+    }
+
+    .dark-btn {
+      background: #0f172a;
+      color: white;
+    }
+
+    .success-btn {
+      background: #10b981;
+      color: white;
+    }
+
+    .danger-btn {
+      background: #ef4444;
+      color: white;
+    }
+
+    .btn-disabled {
+      background: #9ca3af;
+      color: white;
+      cursor: not-allowed;
+    }
+
+    video {
+      width: 100%;
+      max-width: 320px;
+      border-radius: 12px;
+      margin-top: 1rem;
+      border: 2px solid #dbeafe;
+      display: none;
+    }
+
+    .students-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+    }
+
+    .students-table th,
+    .students-table td {
+      padding: 1rem;
+      text-align: left;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .students-table th {
+      background: #f8fafc;
+      font-weight: 600;
+    }
+
+    .status-present {
+      background: #d1fae5;
+      color: #065f46;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-absent {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .match-indicator {
+      padding: 0.8rem 1.5rem;
+      border-radius: 10px;
+      margin-top: 1rem;
+      font-weight: 600;
+      text-align: center;
+      display: none;
+    }
+
+    .match-success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 2px solid #10b981;
+    }
+
+    @media(max-width: 900px) {
+      .layout {
+        flex-direction: column;
+      }
+
+      .sidebar {
+        width: 100%;
+      }
+
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .full-width {
+        grid-column: span 1;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <h2><i class="fas fa-shield-halved"></i> SmartAttendance</h2>
+    <p>AI-Powered Dual Biometric System</p>
+
+    <ul>
+      <li><a href="dash.html"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+      <li><a href="register.html"><i class="fas fa-users"></i> Register Student</a></li>
+      <li class="active"><a href="#"><i class="fas fa-chart-bar"></i> Mark Attendance</a></li>
+      <li><a href="#"><i class="fas fa-calendar-days"></i> Reports</a></li>
+      <li><a href="#"><i class="fas fa-cog"></i> Settings</a></li>
+    </ul>
+  </aside>
+
+  <div class="main">
+
+    <div class="topbar">
+      <h1>Mark Attendance</h1>
+
+      <div class="admin-box">
+        <span>Welcome, Admin</span>
+        <div class="avatar">A</div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="form-grid">
+
+        <div class="section-box">
+          <h3><i class="fas fa-camera"></i> Face Recognition</h3>
+
+          <div class="button-group">
+            <button class="primary-btn" onclick="startCamera()">Start Camera</button>
+            <button class="secondary-btn" onclick="matchFace()">Match Face</button>
+          </div>
+
+          <video id="video" autoplay></video>
+
+          <div id="faceStatus" class="match-indicator"></div>
+        </div>
+
+        <div class="section-box">
+          <h3><i class="fas fa-fingerprint"></i> Fingerprint Scanner</h3>
+
+          <div class="button-group">
+            <button class="dark-btn" onclick="matchFingerprint()">Scan Fingerprint</button>
+          </div>
+
+          <div id="fingerStatus" class="match-indicator"></div>
+        </div>
+
+        <div class="section-box full-width">
+          <h3><i class="fas fa-user-check"></i> Attendance Action</h3>
+
+          <p style="margin-bottom: 1rem;">Face aur fingerprint match hone ke baad hi Present mark hoga.</p>
+
+          <div class="button-group">
+            <button class="success-btn btn-disabled" id="presentBtn" disabled onclick="markAttendance('Present')">
+              <i class="fas fa-check"></i> Mark Present
+            </button>
+
+            <button class="danger-btn" onclick="markAttendance('Absent')">
+              <i class="fas fa-times"></i> Mark Absent
+            </button>
+          </div>
+        </div>
+
+        <div class="section-box full-width">
+          <h3><i class="fas fa-list"></i> Students Attendance</h3>
+
+          <table class="students-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Student ID</th>
+                <th>Status</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              <?php
+              $conn = new mysqli("localhost", "root", "", "attendance_system");
+
+              $query = "SELECT students.id, students.name, students.student_id,
+                        attendance.status, attendance.attendance_time
+                        FROM students
+                        LEFT JOIN attendance ON students.student_id = attendance.student_id
+                        ORDER BY students.id DESC";
+
+              $result = $conn->query($query);
+
+              if($result->num_rows > 0){
+                while($row = $result->fetch_assoc()){
+              ?>
+
+              <tr>
+                <td><?php echo $row['id']; ?></td>
+                <td><?php echo $row['name']; ?></td>
+                <td><?php echo $row['student_id']; ?></td>
+                <td>
+                  <?php if($row['status'] == 'Present'){ ?>
+                    <span class="status-present">Present</span>
+                  <?php } else { ?>
+                    <span class="status-absent">Absent</span>
+                  <?php } ?>
+                </td>
+                <td><?php echo $row['attendance_time'] ? $row['attendance_time'] : '-'; ?></td>
+              </tr>
+
+              <?php
+                }
+              }
+              ?>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  let stream;
+  let faceMatched = false;
+  let fingerprintMatched = false;
+
+  function startCamera() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+      .then(function(s) {
+        stream = s;
+        const video = document.getElementById('video');
+        video.style.display = 'block';
+        video.srcObject = stream;
+      })
+      .catch(function(error) {
+        alert('Camera access denied');
+      });
+  }
+
+  function matchFace() {
+    faceMatched = true;
+
+    const faceStatus = document.getElementById('faceStatus');
+    faceStatus.style.display = 'block';
+    faceStatus.className = 'match-indicator match-success';
+    faceStatus.innerHTML = 'Face Matched Successfully';
+
+    enablePresentButton();
+  }
+
+  function matchFingerprint() {
+    fingerprintMatched = true;
+
+    const fingerStatus = document.getElementById('fingerStatus');
+    fingerStatus.style.display = 'block';
+    fingerStatus.className = 'match-indicator match-success';
+    fingerStatus.innerHTML = 'Fingerprint Matched Successfully';
+
+    enablePresentButton();
+  }
+
+  function enablePresentButton() {
+    if(faceMatched && fingerprintMatched) {
+      const btn = document.getElementById('presentBtn');
+      btn.disabled = false;
+      btn.classList.remove('btn-disabled');
+    }
+  }
+
+  function markAttendance(status) {
+    if(status === 'Present' && (!faceMatched || !fingerprintMatched)) {
+      alert('Pehle face aur fingerprint match karo');
+      return;
+    }
+
+    alert('Attendance Marked as ' + status);
+  }
+</script>
+
+</body>
+</html>
+```
